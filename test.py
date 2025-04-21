@@ -1,50 +1,98 @@
 import unittest
 from unittest.mock import patch, MagicMock
-from requests.exceptions import RequestException
-from cats import CatFactProcessor, APIError
+from file_for_test import CatFactProcessor, APIError
+import requests
 
-class CatFactProcessorUnitTests(unittest.TestCase):
 
-    def test_initial_fact_is_empty(self):
-        processor = CatFactProcessor()
-        self.assertEqual(processor.last_fact, "")
+class TestCatFactProcessor(unittest.TestCase):
+    def setUp(self):
+        """Создание экземпляра класса перед каждым тестом"""
+        self.processor = CatFactProcessor()
 
-    @patch('requests.get')
-    def test_successful_fact_retrieval(self, mock_request):
-        mock_resp = MagicMock()
-        mock_resp.json.return_value = {"fact": "Kittens are adorable."}
-        mock_resp.raise_for_status.return_value = None
-        mock_request.return_value = mock_resp
+    @patch("requests.get")
+    def test_get_fact_successful_response(self, mock_get):
+        """
+        #проверяет что get_fact успешно отрабатывает 
+        """
+        sample_fact = "Cats have five toes on their front paws."
 
-        processor = CatFactProcessor()
-        fact = processor.get_fact()
+        mock_response = MagicMock()
+        mock_response.raise_for_status = MagicMock()
+        mock_response.json.return_value = {"fact": sample_fact}
+        mock_get.return_value = mock_response
 
-        self.assertEqual(fact, "Kittens are adorable.")
-        self.assertEqual(processor.last_fact, "Kittens are adorable.")
+        result = self.processor.get_fact()
 
-    @patch('requests.get')
-    def test_api_request_failure_raises_custom_error(self, mock_request):
-        mock_request.side_effect = RequestException("Failed to connect.")
+        self.assertEqual(result, sample_fact)
+        self.assertEqual(self.processor.last_fact, sample_fact)
+        mock_get.assert_called_once_with(
+            "https://catfact.ninja/fact", timeout=5
+        )
 
-        processor = CatFactProcessor()
+    @patch("requests.get")
+    def test_get_fact_raises_api_error_on_request_exception(self, mock_get):
+        """
+        #проверка ошибки по апи
+        """
+        mock_get.side_effect = requests.exceptions.Timeout("Request timed out")
+
         with self.assertRaises(APIError) as context:
-            processor.get_fact()
+            self.processor.get_fact()
+
         self.assertIn("Ошибка при запросе к API", str(context.exception))
 
-    def test_analysis_returns_zero_for_empty_fact(self):
-        processor = CatFactProcessor()
-        result = processor.get_fact_analysis()
-        expected = {"length": 0, "letter_frequencies": {}}
-        self.assertEqual(result, expected)
+    def test_get_fact_analysis_returns_zero_when_no_fact(self):
+        """
+        #проверка дефолт значений
+        """
+        result = self.processor.get_fact_analysis()
+        self.assertEqual(result, {"length": 0, "letter_frequencies": {}})
 
-    def test_analysis_correctness_with_given_fact(self):
-        processor = CatFactProcessor()
-        processor.last_fact = "Purr"
-        expected_result = {
-            "length": 4,
-            "letter_frequencies": {'p': 1, 'u': 1, 'r': 2}
+    def test_get_fact_analysis_returns_correct_analysis(self):
+        """
+        Проверяет правильность анализа строки: длина и частота букв
+        """
+        self.processor.last_fact = "Cats are cute!"
+
+        result = self.processor.get_fact_analysis()
+
+        self.assertEqual(result["length"], 14)
+
+        expected_freq = {
+            "c": 2,
+            "a": 2,
+            "t": 2,
+            "s": 1,
+            "r": 1,
+            "e": 2,
+            "u": 1,
         }
-        self.assertEqual(processor.get_fact_analysis(), expected_result)
+        self.assertEqual(result["letter_frequencies"], expected_freq)
 
-if __name__ == '__main__':
+
+def test_get_fact_analysis_is_case_insensitive_and_ignores_non_alpha(self):
+    """
+    #проверка игнора регистра 
+    """
+    self.processor.last_fact = "AaA! 123 bBb??"
+
+    result = self.processor.get_fact_analysis()
+
+    self.assertEqual(result["length"], len("AaA! 123 bBb??"))
+    self.assertEqual(result["letter_frequencies"], {"a": 3, "b": 3})
+
+
+def test_get_fact_does_not_mutate_on_exception(self):
+   
+    self.processor.last_fact = "Existing fact"
+    with patch(
+        "requests.get", side_effect=requests.exceptions.RequestException
+    ):
+        with self.assertRaises(APIError):
+            self.processor.get_fact()
+
+    self.assertEqual(self.processor.last_fact, "Existing fact")
+
+
+if __name__ == "__main__":
     unittest.main()
