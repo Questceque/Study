@@ -10,7 +10,7 @@ class TestCatFactProcessor(unittest.TestCase):
         self.processor = CatFactProcessor()
 
     @patch("requests.get")
-    def test_get_fact_successful_response(self, mock_get):
+    def test_get_fact_success(self, mock_get):
         """
         #проверяет что get_fact успешно отрабатывает 
         """
@@ -30,7 +30,7 @@ class TestCatFactProcessor(unittest.TestCase):
         )
 
     @patch("requests.get")
-    def test_get_fact_raises_api_error_on_request_exception(self, mock_get):
+    def test_get_fact_api_error(self, mock_get):
         """
         #проверка ошибки по апи
         """
@@ -41,14 +41,14 @@ class TestCatFactProcessor(unittest.TestCase):
 
         self.assertIn("Ошибка при запросе к API", str(context.exception))
 
-    def test_get_fact_analysis_returns_zero_when_no_fact(self):
+    def test_get_fact_returns_zero(self):
         """
         #проверка дефолт значений
         """
         result = self.processor.get_fact_analysis()
         self.assertEqual(result, {"length": 0, "letter_frequencies": {}})
 
-    def test_get_fact_analysis_returns_correct_analysis(self):
+    def test_get_fact_returns_correct(self):
         """
         Проверяет правильность анализа строки: длина и частота букв
         """
@@ -70,7 +70,7 @@ class TestCatFactProcessor(unittest.TestCase):
         self.assertEqual(result["letter_frequencies"], expected_freq)
 
 
-def test_get_fact_analysis_is_case_insensitive_and_ignores_non_alpha(self):
+def test_get_fact_ignore(self):
     """
     #проверка игнора регистра 
     """
@@ -82,7 +82,7 @@ def test_get_fact_analysis_is_case_insensitive_and_ignores_non_alpha(self):
     self.assertEqual(result["letter_frequencies"], {"a": 3, "b": 3})
 
 
-def test_get_fact_does_not_mutate_on_exception(self):
+def test_get_fact_mutate_on_exception(self):
    
     self.processor.last_fact = "Existing fact"
     with patch(
